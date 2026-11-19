@@ -3,38 +3,205 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sistemas operativos</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; background: #fff; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #ddd; }
-    #estado { padding: .75rem; border-radius: 6px; background: #f2f2f2; }
-    .error { background: #fde8e8 !important; color: #8a1c1c; }
-  </style>
+  <meta name="description" content="Archivo 3D brutalista de sistemas operativos: cada registro se despliega al hacer scroll.">
+  <meta name="theme-color" content="#0b0b0a">
+  <title>SO/ARCHIVO — Sistemas operativos en la historia</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="archive.css">
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
-  <h1>Sistemas operativos en la historia</h1>
-  <p id="estado">Conectando con la API…</p>
-  <table>
-    <thead><tr><th>Año</th><th>Sistema</th><th>Tipo</th></tr></thead>
-    <tbody id="filas"></tbody>
-  </table>
+  <a class="skip-link" href="#archivo">Saltar al archivo</a>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+  <div class="grain" aria-hidden="true"></div>
 
-  <script src="config.js"></script>
-  <script>
-    const estado = document.getElementById("estado");
-    fetch(API_URL + "/api/sistemas")
-      .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then((sistemas) => {
-        estado.textContent = "Datos traídos de " + API_URL;
-        document.getElementById("filas").innerHTML = sistemas
-          .map((s) => `<tr><td>${s.anio}</td><td>${s.nombre}</td><td>${s.tipo}</td></tr>`)
-          .join("");
-      })
-      .catch((e) => {
-        estado.textContent = "No se pudo conectar con " + API_URL + " (" + e.message + "). Abre la consola del navegador (F12) para ver el detalle.";
-        estado.classList.add("error");
-      });
-  </script>
+  <header class="topbar">
+    <a class="brand" href="#top">SO<span>/</span>ARCHIVO</a>
+    <div class="topbar-meta">
+      <span class="status" id="status" data-state="loading" aria-hidden="true">
+        <i class="led"></i><span id="statusText">CONECTANDO</span>
+      </span>
+      <span class="clock" id="clock" title="Hora local">--:--:--</span>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-main">
+        <div class="hero-copy">
+          <p class="kicker reveal" style="--d:.05s">103027 · SISTEMAS OPERATIVOS · CORTE 3</p>
+          <h1 class="hero-title">
+            <span class="line line--solid">SISTEMAS</span>
+            <span class="line line--outline">OPERATIVOS</span>
+          </h1>
+          <p class="hero-lead reveal" style="--d:.15s">
+            Ocho sistemas, seis décadas y una misma pregunta:
+            <em>¿quién manda sobre el hardware?</em>
+            Desliza para desplegar el archivo, un registro a la vez.
+          </p>
+          <div class="hero-actions reveal" style="--d:.25s">
+            <a class="btn" href="#archivo">Desplegar archivo <span aria-hidden="true">↓</span></a>
+            <span class="hero-api">API <b id="heroApi">—</b></span>
+          </div>
+        </div>
+
+        <div class="hero-stage" aria-hidden="true">
+          <div class="stage-frame"></div>
+          <div class="cube-scene">
+            <div class="cube">
+              <div class="face face--front"><small>01</small><span>KERNEL</span></div>
+              <div class="face face--back"><small>02</small><span>SHELL</span></div>
+              <div class="face face--right"><small>03</small><span>MEM</span></div>
+              <div class="face face--left"><small>04</small><span>CPU</span></div>
+              <div class="face face--top"><small>05</small><span>FS</span></div>
+              <div class="face face--bottom"><small>06</small><span>I/O</span></div>
+            </div>
+            <div class="cube-ring"></div>
+          </div>
+          <p class="stage-caption">FIG. 01 / MODELO POR CAPAS</p>
+        </div>
+      </div>
+
+      <div class="hero-foot">
+        <span id="heroRange">1969 → 2008</span>
+        <span class="scroll-cue">DESLIZA <i class="scroll-line"></i></span>
+        <span id="heroCount">08 REGISTROS</span>
+      </div>
+    </section>
+
+    <div class="ticker-wrap">
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-track" id="tickerTrack"></div>
+      </div>
+    </div>
+
+    <section class="manifesto" id="manifiesto">
+      <div class="manifesto-inner">
+        <div class="manifesto-text">
+          <p class="section-tag reveal">01 / MANIFIESTO</p>
+          <h2 class="statement" id="statement">
+            El sistema operativo es la capa que convierte el
+            <span class="accent">metal</span> en memoria, en proceso,
+            en <span class="accent accent--flare">ventana</span>.
+          </h2>
+          <p class="manifesto-lead reveal">
+            Este archivo reúne implementaciones que cambiaron la forma de hablar
+            con las máquinas. Cada entrada se despliega al hacer scroll: una pieza,
+            una época y una decisión de diseño a la vez.
+          </p>
+        </div>
+
+        <div class="layer-stack reveal" aria-hidden="true">
+          <div class="layer-stack-inner">
+            <div class="layer layer--top"><span>APLICACIÓN</span><small>N.03</small></div>
+            <div class="layer layer--mid"><span>KERNEL</span><small>N.02</small></div>
+            <div class="layer layer--low"><span>HARDWARE</span><small>N.01</small></div>
+          </div>
+          <p class="layer-stack-caption">MODELO POR CAPAS / 03 NIVELES</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats" id="metricas">
+      <p class="section-tag reveal">02 / MÉTRICAS DEL ARCHIVO</p>
+      <div class="stats-grid" id="statsGrid">
+        <article class="stat reveal">
+          <span class="stat-index">A / VOLUMEN</span>
+          <span class="stat-value" data-stat="total">—</span>
+          <span class="stat-label">REGISTROS EN LA BASE</span>
+        </article>
+        <article class="stat reveal">
+          <span class="stat-index">B / ORIGEN</span>
+          <span class="stat-value" data-stat="oldest">—</span>
+          <span class="stat-label">PRIMER AÑO</span>
+        </article>
+        <article class="stat reveal">
+          <span class="stat-index">C / ACTUALIDAD</span>
+          <span class="stat-value" data-stat="newest">—</span>
+          <span class="stat-label">ÚLTIMO AÑO</span>
+        </article>
+        <article class="stat reveal">
+          <span class="stat-index">D / DURACIÓN</span>
+          <span class="stat-value" data-stat="span">—</span>
+          <span class="stat-label">ARCO TEMPORAL / AÑOS</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="archive" id="archivo">
+      <div class="archive-head">
+        <p class="section-tag reveal">03 / ARCHIVO</p>
+        <div class="archive-title-row">
+          <h2 class="archive-title reveal">LÍNEA<br><span class="outline">DE TIEMPO</span><span class="dot">.</span></h2>
+          <div class="archive-meta reveal">
+            <p id="estado" role="status" aria-live="polite" data-state="loading">CONECTANDO CON LA API…</p>
+            <p class="archive-hint">UN REGISTRO A LA VEZ · SCROLL PARA DESPLEGAR</p>
+            <p class="archive-count" id="archiveCount">— REGISTROS</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-banner" id="demoBanner" hidden>
+        <strong>MODO DEMO</strong>
+        <span>Estos registros son datos locales de ejemplo: no vienen de la API.</span>
+      </div>
+
+      <div class="timeline" id="timeline" aria-busy="true">
+        <noscript>
+          <p class="nojs">Este archivo necesita JavaScript para consultar la API y desplegar los registros.</p>
+        </noscript>
+      </div>
+    </section>
+
+    <section class="outro" id="fin">
+      <span class="outro-mark" aria-hidden="true">*</span>
+      <div class="outro-inner">
+        <p class="section-tag section-tag--ink reveal">04 / FIN</p>
+        <h2 class="outro-title reveal">FIN DEL<br><span class="outline-ink">ARCHIVO</span></h2>
+        <p class="outro-lead reveal">
+          Ocho entradas. Ninguna historia completa. El sistema operativo sigue
+          siendo la negociación entre lo que el hardware permite y lo que el
+          usuario imagina.
+        </p>
+        <div class="outro-actions reveal">
+          <a class="btn btn--ink" href="#top">Volver al inicio ↑</a>
+          <a class="btn btn--outline-ink" id="apiLink" href="#" target="_blank" rel="noopener" hidden>Abrir endpoint ↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <span class="footer-mark">SO/ARCHIVO</span>
+        <p>Proyecto final · Sistemas Operativos 103027 · Corte 3</p>
+      </div>
+      <div>
+        <span class="footer-label">FUENTE</span>
+        <p id="footerApi">—</p>
+      </div>
+      <div>
+        <span class="footer-label">STACK</span>
+        <p>HTML / CSS / JS<br>Sin frameworks</p>
+      </div>
+      <div>
+        <span class="footer-label">AÑO</span>
+        <p>2026</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>HECHO PARA LEERSE CON SCROLL</span>
+      <a href="#top">▲ TOP</a>
+    </div>
+  </footer>
+
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
