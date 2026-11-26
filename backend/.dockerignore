@@ -1,0 +1,11 @@
+# No meter en la imagen lo que no hace falta (y nunca el .env con secretos).
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.git/
+.gitignore
+Dockerfile
+.dockerignore

@@ -1,2 +1,2 @@
 // Dirección pública de tu backend en Azure (sin "/" al final).
-const API_URL = "http://localhost:8000";
+const API_URL = "https://api-proyectososergio.scaleautomatization.tech";
