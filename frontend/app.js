@@ -55,7 +55,9 @@
     timeline: $("#timeline"),
     footerApi: $("#footerApi"),
     apiLink: $("#apiLink"),
-    tickerTrack: $("#tickerTrack")
+    tickerTrack: $("#tickerTrack"),
+    holoToggle: $("#holoToggle"),
+    holoToggleText: $("#holoToggleText")
   };
 
   function el(tag, className, text) {
@@ -211,6 +213,59 @@
     }
   }
 
+  /* ---------------- holograma 3D ---------------- */
+
+  function buildHolo(item, index) {
+    const holo = el("div", "holo");
+    holo.setAttribute("aria-hidden", "true");
+
+    const hudId = el("span", "holo-hud holo-hud--tl", `SO-${item.anio}-${pad(index + 1)}`);
+    const hudState = el("span", "holo-hud holo-hud--tr");
+    hudState.append(el("i"), document.createTextNode("HOLO / 3D"));
+
+    const floor = el("span", "holo-floor");
+    const beam = el("span", "holo-beam");
+
+    const rig = el("div", "holo-rig");
+    rig.append(
+      el("span", "holo-ring holo-ring--a"),
+      el("span", "holo-ring holo-ring--b"),
+      el("span", "holo-ring holo-ring--c"),
+      el("span", "holo-axis")
+    );
+
+    const core = el("div", "holo-core");
+    core.appendChild(el("span", "holo-core-tag", "AÑO"));
+    const year = el("span", "holo-year", String(item.anio));
+    core.append(year, el("span", "holo-scanline"));
+    rig.appendChild(core);
+
+    const nameChip = el("span", "holo-chip holo-chip--name", item.nombre);
+    const typeChip = el("span", "holo-chip holo-chip--type", item.tipo);
+    typeChip.title = item.tipo;
+    rig.append(nameChip, typeChip);
+
+    const base = el("span", "holo-base");
+    const particles = el("span", "holo-particles");
+    for (let p = 0; p < 8; p += 1) {
+      const dot = el("i");
+      dot.style.setProperty("--x", `${8 + ((p * 29 + index * 13) % 84)}%`);
+      dot.style.setProperty("--d", `${((p * 0.63 + index * 0.27) % 4.4).toFixed(2)}s`);
+      dot.style.setProperty("--s", `${2 + (p % 3)}px`);
+      particles.appendChild(dot);
+    }
+
+    const frame = el("span", "holo-frame");
+    for (let c = 0; c < 4; c += 1) frame.appendChild(el("i"));
+
+    const scan = el("span", "holo-scan");
+    const boot = el("span", "holo-boot");
+    const hint = el("span", "holo-hud holo-hud--bl", "CLICK / ESCANEAR");
+
+    holo.append(hudId, hudState, floor, beam, rig, base, particles, frame, scan, boot, hint);
+    return holo;
+  }
+
   function buildEntry(item, index, total) {
     const num = pad(index + 1);
     const accent = index % 2 === 0 ? "var(--acid)" : "var(--flare)";
@@ -221,8 +276,12 @@
     entry.style.setProperty("--accent", accent);
     entry.style.setProperty("--tilt", tilt);
 
+    const shell = el("div", "entry-shell");
     const card = el("div", "entry-card");
     card.dataset.index = num;
+
+    const glare = el("span", "card-glare");
+    glare.setAttribute("aria-hidden", "true");
 
     const top = el("div", "entry-top");
     const numEl = el("span", "entry-num", num);
@@ -235,12 +294,19 @@
 
     const main = el("div", "entry-main");
     const yearBlock = el("div", "entry-year-block");
-    const year = el("div", "entry-year", String(item.anio));
-    year.setAttribute("aria-hidden", "true");
-    yearBlock.append(year, el("span", "entry-year-label", "AÑO DE REGISTRO"));
+    const holoWrap = el("div", "holo-wrap");
+    holoWrap.appendChild(buildHolo(item, index));
+
+    const holoHit = el("button", "holo-hit");
+    holoHit.type = "button";
+    holoHit.setAttribute("aria-label", `Escanear holograma de ${item.nombre} (${item.anio})`);
+    holoHit.title = "Escanear holograma";
+    holoWrap.appendChild(holoHit);
+
+    yearBlock.append(holoWrap, el("span", "entry-year-label", "AÑO DE REGISTRO / PROYECCIÓN 3D"));
 
     const copy = el("div", "entry-copy");
-    const name = el("h3", "entry-name", item.nombre);
+    const name = el("h3", "entry-name entry-name--holo", item.nombre);
     name.id = `entry-title-${index}`;
     copy.appendChild(name);
     copy.appendChild(el("p", "entry-note", noteFor(item)));
@@ -273,8 +339,9 @@
     const side = el("span", "entry-side", "ARCHIVO SO / SCROLL");
     side.setAttribute("aria-hidden", "true");
 
-    card.append(top, main, bottom, side);
-    entry.appendChild(card);
+    card.append(top, main, bottom, side, glare);
+    shell.appendChild(card);
+    entry.appendChild(shell);
     entry.setAttribute("aria-labelledby", name.id);
     return entry;
   }
@@ -332,6 +399,7 @@
 
     entries = $$(".entry");
     entries.forEach((entry) => entryObserver.observe(entry));
+    bindEntryInteractions();
 
     setStatus(demo ? "demo" : "ok", demo ? "MODO DEMO" : "EN LÍNEA");
     setEstado(
@@ -446,6 +514,101 @@
     }
   }
 
+  /* ---------------- interacción holográfica ---------------- */
+
+  function holoDisabled() {
+    return reduceMotion.matches || document.body.classList.contains("holo-off");
+  }
+
+  function bindEntryInteractions() {
+    entries.forEach((entry) => {
+      const card = $(".entry-card", entry);
+      if (!card) return;
+      const holo = $(".holo", entry);
+      const hit = $(".holo-hit", entry);
+      let frame = 0;
+      let pointer = null;
+      let scanTimer = 0;
+
+      const apply = () => {
+        frame = 0;
+        if (!pointer) return;
+        const rect = card.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const x = Math.min(1, Math.max(0, (pointer.clientX - rect.left) / rect.width));
+        const y = Math.min(1, Math.max(0, (pointer.clientY - rect.top) / rect.height));
+        const nx = x - .5;
+        const ny = y - .5;
+        card.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
+        card.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+        entry.style.setProperty("--tilt-x", `${(-ny * 4).toFixed(2)}deg`);
+        entry.style.setProperty("--tilt-y", `${(nx * 5).toFixed(2)}deg`);
+        if (holo) {
+          holo.style.setProperty("--hx", `${(nx * 18).toFixed(2)}deg`);
+          holo.style.setProperty("--hy", `${(-ny * 18).toFixed(2)}deg`);
+        }
+      };
+
+      const reset = () => {
+        pointer = null;
+        entry.style.setProperty("--tilt-x", "0deg");
+        entry.style.setProperty("--tilt-y", "0deg");
+        if (holo) {
+          holo.style.setProperty("--hx", "0deg");
+          holo.style.setProperty("--hy", "0deg");
+        }
+      };
+
+      card.addEventListener("pointermove", (event) => {
+        if (event.pointerType === "touch" || holoDisabled()) return;
+        pointer = event;
+        if (!frame) frame = requestAnimationFrame(apply);
+      });
+      card.addEventListener("pointerleave", reset);
+
+      if (holo && hit) {
+        hit.addEventListener("click", (event) => {
+          if (holoDisabled()) return;
+          window.clearTimeout(scanTimer);
+          holo.classList.remove("is-scanning");
+          void holo.offsetWidth;
+          holo.classList.add("is-scanning");
+          scanTimer = window.setTimeout(() => holo.classList.remove("is-scanning"), 1200);
+          if (event.detail > 0) hit.blur();
+        });
+      }
+    });
+  }
+
+  function bindStatGlow() {
+    $$(".stat").forEach((stat) => {
+      stat.addEventListener("pointermove", (event) => {
+        if (event.pointerType === "touch" || holoDisabled()) return;
+        const rect = stat.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        stat.style.setProperty("--gx", `${(((event.clientX - rect.left) / rect.width) * 100).toFixed(1)}%`);
+        stat.style.setProperty("--gy", `${(((event.clientY - rect.top) / rect.height) * 100).toFixed(1)}%`);
+      });
+    });
+  }
+
+  function setHoloEnabled(on) {
+    document.body.classList.toggle("holo-off", !on);
+    if (els.holoToggle) els.holoToggle.setAttribute("aria-pressed", String(on));
+    if (els.holoToggleText) els.holoToggleText.textContent = on ? "HOLO ON" : "HOLO OFF";
+  }
+
+  function bindHoloToggle() {
+    if (!els.holoToggle) return;
+    els.holoToggle.addEventListener("click", () => {
+      setHoloEnabled(document.body.classList.contains("holo-off"));
+    });
+    setHoloEnabled(!reduceMotion.matches);
+    if (typeof reduceMotion.addEventListener === "function") {
+      reduceMotion.addEventListener("change", (event) => setHoloEnabled(!event.matches));
+    }
+  }
+
   /* ---------------- estado y cabecera ---------------- */
 
   function setStatus(kind, text) {
@@ -472,15 +635,6 @@
     const max = doc.scrollHeight - window.innerHeight;
     const progress = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
     if (els.progressBar) els.progressBar.style.transform = `scaleX(${progress})`;
-
-    if (reduceMotion.matches || window.innerWidth <= 860) return;
-    const viewport = window.innerHeight;
-    entries.forEach((entry) => {
-      const rect = entry.getBoundingClientRect();
-      if (rect.bottom < -120 || rect.top > viewport + 120) return;
-      const center = (rect.top + rect.height / 2 - viewport / 2) / viewport;
-      entry.style.setProperty("--year-y", `${(-center * 20).toFixed(1)}px`);
-    });
   }
 
   function requestScrollUpdate() {
@@ -519,6 +673,8 @@
     window.setInterval(updateClock, 1000);
 
     bindHeroParallax();
+    bindStatGlow();
+    bindHoloToggle();
     splitStatement();
     $$(".reveal").forEach((node) => revealObserver.observe(node));
     setupStatsObserver();

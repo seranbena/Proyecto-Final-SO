@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="archive.css">
+  <link rel="stylesheet" href="holo.css">
   <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
@@ -140,8 +141,11 @@
           <h2 class="archive-title reveal">LÍNEA<br><span class="outline">DE TIEMPO</span><span class="dot">.</span></h2>
           <div class="archive-meta reveal">
             <p id="estado" role="status" aria-live="polite" data-state="loading">CONECTANDO CON LA API…</p>
-            <p class="archive-hint">UN REGISTRO A LA VEZ · SCROLL PARA DESPLEGAR</p>
+            <p class="archive-hint">UN REGISTRO A LA VEZ · CURSOR + CLICK PARA ESCANEAR</p>
             <p class="archive-count" id="archiveCount">— REGISTROS</p>
+            <button class="holo-toggle" id="holoToggle" type="button" aria-pressed="true" title="Activar o desactivar los efectos holográficos">
+              <i aria-hidden="true"></i><span id="holoToggleText">HOLO ON</span>
+            </button>
           </div>
         </div>
       </div>
